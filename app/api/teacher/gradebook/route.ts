@@ -21,7 +21,10 @@ export async function GET(request: NextRequest) {
     })
 
     if (!teacher) {
-      return NextResponse.json({ error: 'Teacher profile not found' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Teacher profile not found' },
+        { status: 404 }
+      )
     }
 
     // Verify teacher has access to this class
@@ -36,7 +39,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    // Get class with enrollments
+    // Get class with enrollments and assignments
     const classData = await prisma.class.findUnique({
       where: { id: classId },
       include: {
@@ -49,7 +52,7 @@ export async function GET(request: NextRequest) {
                   include: {
                     assignment: {
                       include: {
-                        classLinks: true,
+                        class: true,
                       },
                     },
                   },
@@ -59,9 +62,6 @@ export async function GET(request: NextRequest) {
           },
         },
         assignments: {
-          include: {
-            classLinks: true,
-          },
           orderBy: {
             dueDate: 'desc',
           },
@@ -73,21 +73,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Class not found' }, { status: 404 })
     }
 
-    // Format assignments
-    const assignments = classData.assignments
-      .filter((a) => a.classLinks.some((cl) => cl.classId === classId))
-      .map((a) => ({
-        id: a.id,
-        title: a.title,
-        dueDate: a.dueDate.toISOString(),
-        points: a.points,
-      }))
+    // All assignments on this class already belong to this class
+    const assignments = classData.assignments.map((a) => ({
+      id: a.id,
+      title: a.title,
+      dueDate: a.dueDate.toISOString(),
+      points: a.points,
+    }))
 
-    // Format students with grades
+    // Format students with grades for this class
     const students = classData.enrollments.map((enrollment) => {
       const student = enrollment.student
-      const studentGrades = student.grades.filter((grade) =>
-        grade.assignment.classLinks.some((cl) => cl.classId === classId)
+      const studentGrades = student.grades.filter(
+        (grade) => grade.assignment.classId === classId
       )
 
       const totalPoints = studentGrades.reduce((sum, g) => sum + g.score, 0)
@@ -118,4 +116,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

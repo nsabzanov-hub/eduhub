@@ -16,12 +16,10 @@ interface Assignment {
   dueDate: string
   points: number
   isPublished: boolean
-  classLinks: Array<{
-    class: {
-      id: string
-      name: string
-    }
-  }>
+  class: {
+    id: string
+    name: string
+  } | null
 }
 
 export default function AssignmentsPage() {
@@ -104,7 +102,9 @@ export default function AssignmentsPage() {
                   </div>
 
                   {assignment.description && (
-                    <p className="text-secondary-600 mb-3">{assignment.description}</p>
+                    <p className="text-secondary-600 mb-3">
+                      {assignment.description}
+                    </p>
                   )}
 
                   <div className="flex flex-wrap items-center gap-4 text-sm text-secondary-600">
@@ -116,14 +116,12 @@ export default function AssignmentsPage() {
                       <BookOpen className="h-4 w-4 mr-1" />
                       <span>{assignment.points} points</span>
                     </div>
-                    <div className="flex items-center">
-                      <Users className="h-4 w-4 mr-1" />
-                      <span>
-                        {assignment.classLinks.length} class
-                        {assignment.classLinks.length !== 1 ? 'es' : ''}:{' '}
-                        {assignment.classLinks.map((cl) => cl.class.name).join(', ')}
-                      </span>
-                    </div>
+                    {assignment.class && (
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 mr-1" />
+                        <span>{assignment.class.name}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -142,4 +140,3 @@ export default function AssignmentsPage() {
     </DashboardLayout>
   )
 }
-

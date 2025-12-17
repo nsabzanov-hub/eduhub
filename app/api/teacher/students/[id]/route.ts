@@ -31,11 +31,7 @@ export async function GET(
           include: {
             assignment: {
               include: {
-                classLinks: {
-                  include: {
-                    class: true,
-                  },
-                },
+                class: true,
               },
             },
           },
@@ -93,14 +89,15 @@ export async function GET(
         ? allGrades.reduce((sum, g) => sum + g.percentage, 0) / allGrades.length
         : 0
 
-    // Group grades by subject
+    // Group grades by subject (based on assignment.classId)
     const gradesBySubject = student.enrollments.map((enrollment) => {
-      const classGrades = allGrades.filter((g) =>
-        g.assignment.classLinks.some((cl) => cl.classId === enrollment.classId)
+      const classGrades = allGrades.filter(
+        (g) => g.assignment.classId === enrollment.classId
       )
       const average =
         classGrades.length > 0
-          ? classGrades.reduce((sum, g) => sum + g.percentage, 0) / classGrades.length
+          ? classGrades.reduce((sum, g) => sum + g.percentage, 0) /
+            classGrades.length
           : 0
       return {
         subject: enrollment.class.subject,
@@ -151,4 +148,3 @@ export async function GET(
     )
   }
 }
-
