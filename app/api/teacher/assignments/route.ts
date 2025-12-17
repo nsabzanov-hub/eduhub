@@ -28,7 +28,10 @@ export async function POST(request: NextRequest) {
     })
 
     if (!teacher) {
-      return NextResponse.json({ error: 'Teacher profile not found' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Teacher profile not found' },
+        { status: 404 }
+      )
     }
 
     // Verify teacher has access to all selected classes
@@ -46,6 +49,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // For now, attach the assignment to the first selected class
+    const primaryClassId = data.classIds[0]
+
     // Create assignment
     const assignment = await prisma.assignment.create({
       data: {
@@ -56,26 +62,21 @@ export async function POST(request: NextRequest) {
         dueDate: new Date(data.dueDate),
         points: data.points,
         isPublished: true,
-        classLinks: {
-          create: data.classIds.map((classId) => ({
-            classId,
-          })),
-        },
+        classId: primaryClassId,
       },
       include: {
-        classLinks: {
-          include: {
-            class: true,
-          },
-        },
+        class: true,
+        grades: true,
       },
     })
 
-    // Create student assignments for all enrolled students
+    // Create student assignments for all enrolled students in all selected classes
     for (const classId of data.classIds) {
       const enrollments = await prisma.classEnrollment.findMany({
         where: { classId },
       })
+
+      if (enrollments.length === 0) continue
 
       await prisma.studentAssignment.createMany({
         data: enrollments.map((enrollment) => ({
@@ -114,17 +115,16 @@ export async function GET(request: NextRequest) {
     })
 
     if (!teacher) {
-      return NextResponse.json({ error: 'Teacher profile not found' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Teacher profile not found' },
+        { status: 404 }
+      )
     }
 
     const assignments = await prisma.assignment.findMany({
       where: { teacherId: teacher.id },
       include: {
-        classLinks: {
-          include: {
-            class: true,
-          },
-        },
+        class: true,
         grades: true,
       },
       orderBy: {
@@ -141,4 +141,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
