@@ -1,8 +1,7 @@
 // Google Classroom integration scaffolding
 // This file provides the structure for Google Classroom integration
 
-import { google } from '@google-cloud/classroom'
-
+import { classroom_v1, classroom } from '@googleapis/classroom'
 // Initialize Google Classroom client
 // In production, you'll need to set up OAuth2 and store tokens
 export async function initializeGoogleClassroom(accessToken: string) {
