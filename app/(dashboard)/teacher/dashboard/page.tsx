@@ -5,7 +5,6 @@ import {
   BookOpen, 
   AlertCircle, 
   TrendingUp,
-  Calendar,
   Clock
 } from 'lucide-react'
 import { prisma } from '@/lib/db'
@@ -13,7 +12,18 @@ import { getAuthUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
 
-async function getDashboardData(userId: string) {
+async function getDashboardData(userId: string): Promise<{
+  totalStudents: number
+  totalClasses: number
+  missingAssignments: number
+  strugglingStudents: number
+  upcomingAssignments: Array<{
+    id: string
+    title: string
+    dueDate: Date
+    classes: string[]
+  }>
+} | null> {
   const teacher = await prisma.teacherProfile.findUnique({
     where: { userId },
     include: {
@@ -34,23 +44,22 @@ async function getDashboardData(userId: string) {
           },
         },
       },
-      assignments: {
-        include: {
-          classLinks: {
-            include: {
-              class: true,
-            },
-          },
-        },
-        orderBy: {
-          dueDate: 'asc',
-        },
-        take: 5,
-      },
     },
   })
 
   if (!teacher) return null
+
+  // Query assignments separately with orderBy and take
+  const assignments = await prisma.assignment.findMany({
+    where: { teacherId: teacher.id },
+    include: {
+      class: true,
+    },
+    orderBy: {
+      dueDate: 'asc',
+    },
+    take: 5,
+  })
 
   const totalStudents = new Set(
     teacher.classes.flatMap((ct) =>
@@ -71,11 +80,11 @@ async function getDashboardData(userId: string) {
     totalClasses,
     missingAssignments,
     strugglingStudents,
-    upcomingAssignments: teacher.assignments.map((a) => ({
+    upcomingAssignments: assignments.map((a) => ({
       id: a.id,
       title: a.title,
       dueDate: a.dueDate,
-      classes: a.classLinks.map((cl) => cl.class.name),
+      classes: a.class ? [a.class.name] : [],
     })),
   }
 }
@@ -185,10 +194,12 @@ export default async function TeacherDashboard() {
                     <Clock className="h-4 w-4 mr-1" />
                     <span>Due: {formatDate(assignment.dueDate)}</span>
                   </div>
-                  <div className="flex items-center text-sm text-secondary-600 mt-1">
-                    <BookOpen className="h-4 w-4 mr-1" />
-                    <span>{assignment.classes.join(', ')}</span>
-                  </div>
+                  {assignment.classes.length > 0 && (
+                    <div className="flex items-center text-sm text-secondary-600 mt-1">
+                      <BookOpen className="h-4 w-4 mr-1" />
+                      <span>{assignment.classes.join(', ')}</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
