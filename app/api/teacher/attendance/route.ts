@@ -43,7 +43,10 @@ export async function GET(request: NextRequest) {
     })
 
     if (!teacher) {
-      return NextResponse.json({ error: 'Teacher profile not found' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Teacher profile not found' },
+        { status: 404 }
+      )
     }
 
     // Verify teacher has access
@@ -125,7 +128,10 @@ export async function POST(request: NextRequest) {
     })
 
     if (!teacher) {
-      return NextResponse.json({ error: 'Teacher profile not found' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Teacher profile not found' },
+        { status: 404 }
+      )
     }
 
     // Verify teacher has access
@@ -143,6 +149,9 @@ export async function POST(request: NextRequest) {
     const date = new Date(data.date)
     date.setHours(0, 0, 0, 0)
 
+    // Normalize period into a guaranteed number (fallback to 0 if null/undefined)
+    const period = data.period ?? 0
+
     // Save or update attendance for each student
     const results = await Promise.all(
       data.attendance.map(async ({ studentId, status }) => {
@@ -153,7 +162,7 @@ export async function POST(request: NextRequest) {
               classId: data.classId,
               studentId,
               date,
-              period: data.period || null,
+              period, // <- now always a number
             },
           },
           update: {
@@ -165,7 +174,7 @@ export async function POST(request: NextRequest) {
             classId: data.classId,
             studentId,
             date,
-            period: data.period || null,
+            period, // <- now always a number
             status,
             markedBy: teacher.id,
           },
@@ -193,4 +202,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
