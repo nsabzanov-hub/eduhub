@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
@@ -172,4 +173,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
-
